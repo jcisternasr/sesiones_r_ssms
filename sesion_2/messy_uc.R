@@ -1,4 +1,4 @@
-#install.packages('pacman')
+install.packages('pacman')
 
 #### Importar librerías ----
 
@@ -14,13 +14,13 @@ pacman::p_load(
 
 #### Importar archivos ----
 data <- read_excel(
-  path = here('data','messy_uc.xlsx'),
+  path = here('sesion_2','data','messy_uc.xlsx'),
   sheet = "Data",
   skip = 5
   )
 
 df_dictionary <- read_excel(
-  path = here("data", "messy_uc.xlsx"),
+  path = here("sesion_2","data", "messy_uc.xlsx"),
   sheet = "Data_Dictionary"
 )
 
@@ -28,7 +28,7 @@ df_dictionary <- read_excel(
 #### Explorar dataframe ----
 
 dfSummary(data)
-names(data)
+names(data) # conocer los nombres de las columnas 
 
 #### Crear diccionario de variables ----
 
@@ -42,13 +42,22 @@ clean_data <- data %>%
   #limpiar nombres de columnas
   janitor::clean_names() %>%
   #eliminar filas y columnas
+  janitor::remove_empty(which = c('rows', 'cols')) 
+
+unique(clean_data$ethnic)
+
+
+clean_data <- data %>%
+  #limpiar nombres de columnas
+  janitor::clean_names() %>%
+  #eliminar filas y columnas
   janitor::remove_empty(which = c('rows', 'cols')) %>%
   #crear columnas 
   mutate(
     #unificar valores
     ethnic_clean = case_when(
-      ethnic %in%  c("hispanic", "Hispanic", "hispamnic") ~ "hispanic",
-      ethnic %in%  c("NOT hispanic", "not hispanic") ~ "not hispanic",
+      ethnic %in%  c("hispanic", "Hispanic", "hispamnic") ~ "Hispanic",
+      ethnic %in%  c("NOT hispanic", "not hispanic") ~ "Not hispanic",
       .default = ethnic), 
     #manejar valores erróneos
     end_na_clean = na_if(end_na,-99),
@@ -76,4 +85,5 @@ clean_data <- data %>%
   )
 
 # Mirar columnas con cambios
-clean_data %>% select(pat_id, start_na, start_na_clean, pre_post_wt_kg, start_emo) %>% view()
+clean_data_corto <- clean_data %>% 
+  select(pat_id, start_na_clean, start_na_clean, pre_post_wt_kg, start_emo)
