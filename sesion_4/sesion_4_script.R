@@ -1,4 +1,5 @@
 # 1. Importar librerías ----
+
 pacman::p_load(
   tidyverse, #manejo de datos
   here,       # directorios relativos
@@ -10,8 +11,8 @@ pacman::p_load(
 
 # 2. Importar y sintetizar datos del DEIS ----
 
-data_deis <- import(here("data","deis2024.xlsx")) %>%
-  clean_names() %>%
+data_deis <- import(here("data","deis2024.xlsx")) %>% #importo datos
+  clean_names() %>% #normalizo los nombres nombres de las columnas
   select(codigo_vigente, nombre_oficial, nombre_comuna, nivel_de_atencion, nombre_dependencia_jerarquica_seremi_servicio_de_salud)  %>% 
   mutate(codigo_vigente = as.character(codigo_vigente)) %>%
   filter(nombre_dependencia_jerarquica_seremi_servicio_de_salud == 'Servicio de Salud Metropolitano Sur')
@@ -28,7 +29,6 @@ especialidades <- import(here("data","especialidades.xlsx")) %>%
 
 
 # 4. Importar datos de LE anonimizada ----
-
 
 data_bruta <- import(here("data","data_le_anonima.xlsx"))
 
@@ -110,8 +110,33 @@ revisar <- data_procesada %>%
 
 
 # 6. Ejercicios ----
+
 #### a) Generar un dataframe con la LE abierta del HSLBP
+
+data_hslbp <- data_procesada %>%
+  filter(abrev_destino == 'HSLBP', is.na(c_salida))
+
 #### b) Generar una columna con la edad en años y tiempo de espera en días
+  
+data_hslbp <- data_hslbp %>%
+  mutate(
+    edad = round(interval(fecha_nac,f_entrada) / years(1), 1),
+    t_espera = interval(f_entrada,today())/days(1)
+  )
+  
+  
 #### d) Obtener el n de la LE según nivel de atención
+
+group_nivel <- data_hslbp %>% 
+  count(nivel_de_atencion)
+
 #### e) Obtener el n de la LE según comuna de origen
+
+group_comuna <- data_hslbp %>% 
+  count(nivel_de_atencion, nombre_comuna)
 #### f) Obtener los promedios de tiempo de espera por especialidad.
+
+
+
+  
+  
