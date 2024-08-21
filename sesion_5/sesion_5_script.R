@@ -27,7 +27,6 @@ especialidades <- import(here("data","especialidades.xlsx")) %>%
     desc_especialidad = desc820
     )
 
-
 # 4. Importar datos de LE anonimizada ----
 
 data_bruta <- import(here("data","data_le_anonima.xlsx"))
@@ -57,86 +56,146 @@ data_procesada <- data_bruta %>%
   select(run, sexo, fecha_nac, 
          establecimiento_origen, nombre_comuna, nivel_de_atencion, f_entrada, sospecha_diag, 
          establecimiento_destino, abrev_destino, desc_especialidad, presta_est, 
-         f_salida, c_salida )
+         f_salida, c_salida ) 
 
-# Columnas data_procesada
-# [1] "run"                     [2]"sexo"                   
-# [3] "fecha_nac"               [4]"presta_est"             
-# [5] "f_entrada"               [6]"f_salida"               
-# [7] "c_salida"                [8]"sospecha_diag"          
-# [9] "establecimiento_destino" [10]"establecimiento_origen" 
-# [11] "nombre_comuna"           [12]"nivel_de_atencion"      
-# [13] "desc_especialidad"       [14]"abrev_destino"   
+data_le_hslbp <- data_procesada %>%
+  filter(abrev_destino == 'HSLBP', is.na(c_salida)) %>%
+  mutate(t_espera = round(interval(f_entrada,today()) / days(1), 1),
+         edad_sic = round(interval(fecha_nac,f_entrada) / years(1), 1), #lubridate y redondear
+         edad_hoy = round(interval(fecha_nac,today()) / years(1), 1)) #lubridate, today() y redondear)
+
+rm(data_bruta, data_deis, especialidades) #elimino los datos que no usaré
+
+
+
+# 5. Intro a visualización ----
+
+
+############# Scatterplot ----
+
+##################################################### #
+
+ggplot(
+  data = data_le_hslbp, #datos
+  mapping = 
+      aes( #estética (valores columna)
+         x = edad_hoy, 
+         y = t_espera)
+  ) +
+geom_point()
+
+##################################################### #
   
+ggplot(data = data_le_hslbp, mapping = aes(x = edad_hoy, y = t_espera))+  # establecer datos y ejes de mapeo
+geom_point(
+  color = "darkgreen", 
+  size = 0.5, 
+  alpha = 0.2)         # establecer la estética de los puntos estáticos
 
-# 5. Agrupar y contar datos.----
-# https://epirhandbook.com/es/new_pages/grouping.es.html 
+####################################################### #
 
-# Agrupar por hospital y conocer los totales
+ggplot(data = data_le_hslbp,   # establecer los datos
+       mapping = aes(     # asignar la estética a los valores de la columna
+         x = edad_hoy,           # asigna el eje-x a la edad             
+         y = t_espera,         # asignar el eje-y al peso
+         color = edad_sic,
+         size = t_espera)     # asignar el color a la edad
+        )+  
+  geom_point()
 
-group_hospital <- data_procesada %>% 
-  group_by(abrev_destino,nivel_de_atencion) %>%
-  tally()
+######################################################### #
+ggplot(data = data_le_hslbp,
+       mapping = aes(           # asignar la estética a las columnas
+         x = edad_sic,
+         y = t_espera,
+         color = edad_sic)) + 
+  geom_point(                   # añadir puntos para cada fila de datos
+    size = 1,
+    alpha = 0.5) +  
+  geom_smooth(                  # añadir una línea de tendencia  
+    method = "lm",             # con método lineal
+    size = 1)
+
+###################################################### #
+
+ggplot(data = data_le_hslbp,
+       mapping = aes(x = edad_sic, y = t_espera, color = nivel_de_atencion)) #color como variable categórica
+  +
+  geom_point(alpha = 0.5)
 
 
-# Agrupar por hospital y generar columnas nuevas
+############# Histogram ----
 
-group_hospital <- data_procesada %>% 
-  group_by(abrev_destino,
-    estado = ifelse(is.na(c_salida),'abierta','cerrada')) %>%
-  tally()
+ggplot(
+  data = data_le_hslbp, 
+  mapping = aes(x = t_espera)) +
+  geom_histogram()
 
-group_hospital <- data_procesada %>%
-  count(nivel_de_atencion, estado = ifelse(is.na(c_salida),'abierta','cerrada'), f_entrada < '2022-01-01')
+#####################################-
 
-# Generar columnas para funciones específicas e intro al manejo del tiempo
 
-data_procesada <-  data_procesada %>% 
-  mutate(
-    edad = round(interval(fecha_nac,f_entrada) / years(1), 1), #lubridate y redondear
-    edad_hoy = round(interval(fecha_nac,today()) / years(1), 1),#lubridate, today() y redondear
-  )
+ggplot(data = data_le_hslbp, mapping = aes(x = t_espera))+       # establecer datos y ejes
+  geom_histogram(              # mostrar histograma
+    binwidth = 10,                # anchura de los bins (cuadrados)
+    color = "red",               # color de la línea del bin
+    fill = "blue",               # color del interior del bin
+    alpha = 0.1)                 # transparencia del bin
 
-group_hospital <- data_procesada %>% 
-  summarise(
-    n_cases  = n(), #cuenta los totales del dataframe
-    mean_age = mean(edad, na.rm=T),#obtengo la media
-    max_age  = max(edad, na.rm=T),#máximos 
-    min_age  = min(edad, na.rm=T),#mínimos
-    n_pediatrico  = sum(edad < 15, na.rm=T))#suma según regla
 
-revisar <- data_procesada %>%
-  filter(edad < 0)
+#Incorporar facetas
+
+#histograma
+ggplot(data_le_hslbp, aes(x = t_espera)) +
+  geom_histogram(              # mostrar histograma
+    binwidth = 10,                # anchura de los bins (cuadrados)
+    color = "red",               # color de la línea del bin
+    fill = "blue",               # color del interior del bin
+    alpha = 0.1) +                # transparencia del bin
+  theme_minimal()+                              # simplificar los paneles de fondo
+  labs(                                         # añadir al gráfico etiquetas, título, etc.
+    x = "Tiempo de espera",
+    y = "N° SIC",
+    title = "Tiempo de espera por nivel de atención") +
+  facet_wrap(~nivel_de_atencion)                       # se crean las facetas
+
+#scatterplot
+ggplot(data = data_procesada,
+       mapping = aes(           # asignar la estética a las columnas
+         x = edad_sic,
+         y = t_espera,
+         color = edad_sic)) + 
+  geom_point(                   # añadir puntos para cada fila de datos
+    size = 1,
+    alpha = 0.5) +  
+  geom_smooth(                  # añadir una línea de tendencia  
+    method = "lm",             # con método lineal
+    size = 1) +
+  facet_wrap(~nivel_de_atencion)
+
+
+# todos estos gráficos dan la misma información. 
+
+ggplot(data = data_le_hslbp, mapping = aes(x = edad_sic))+
+  geom_histogram()
+
+ggplot(data = data_le_hslbp)+
+  geom_histogram(mapping = aes(x = edad_sic))
+
+ggplot()+
+  geom_histogram(data = data_le_hslbp, mapping = aes(x = edad_sic))
 
 
 # 6. Ejercicios ----
 
-#### a) Generar un dataframe con la LE abierta del HSLBP
+#### 1) Generar una pregunta de investigación respecto de los datos
+          # hospital/es
+          # especialidad/es
+          # diagnósticos
+          # edades
+          # niveles de atención
+          # etc
+#### 2) Procesar los datos para obtenerla y generar las tablas necesarias para 
+#### 3) Generar las tablas necesarias mediante agrupación
+#### 4) Generar un gráfico que permita visualizar la respuesta a la pregunta de investigación
 
-data_hslbp <- data_procesada %>%
-  filter(abrev_destino == 'HSLBP', is.na(c_salida))
-
-#### b) Generar una columna con la edad en años y tiempo de espera en días
-  
-data_hslbp <- data_hslbp %>%
-  mutate(
-    edad = round(interval(fecha_nac,f_entrada) / years(1), 1),
-    t_espera = interval(f_entrada,today())/days(1)
-  )
-  
-  
-#### d) Obtener el n de la LE según nivel de atención
-
-group_nivel <- data_hslbp %>% 
-  count(nivel_de_atencion)
-
-#### e) Obtener el n de la LE según comuna de origen
-
-group_comuna <- data_hslbp %>% 
-  count(nivel_de_atencion, nombre_comuna)
-#### f) Obtener los promedios de tiempo de espera por especialidad.
-
-
-
-  
   
