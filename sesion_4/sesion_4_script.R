@@ -124,7 +124,6 @@ data_hslbp <- data_hslbp %>%
     t_espera = interval(f_entrada,today())/days(1)
   )
   
-  
 #### d) Obtener el n de la LE según nivel de atención
 
 group_nivel <- data_hslbp %>% 
