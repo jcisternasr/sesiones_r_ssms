@@ -80,7 +80,7 @@ ggplot(
   mapping = 
       aes( #estética (valores columna)
          x = edad_hoy, 
-         y = t_espera)
+         y = nivel_de_atencion)
   ) +
 geom_point()
 
@@ -119,8 +119,10 @@ ggplot(data = data_le_hslbp,
 ###################################################### #
 
 ggplot(data = data_le_hslbp,
-       mapping = aes(x = edad_sic, y = t_espera, color = nivel_de_atencion)) #color como variable categórica
-  +
+       mapping = aes(           # asignar la estética a las columnas
+         x = edad_sic,
+         y = t_espera,
+         color = nivel_de_atencion)) +
   geom_point(alpha = 0.5)
 
 
@@ -137,7 +139,7 @@ ggplot(
 ggplot(data = data_le_hslbp, mapping = aes(x = t_espera))+       # establecer datos y ejes
   geom_histogram(              # mostrar histograma
     binwidth = 10,                # anchura de los bins (cuadrados)
-    color = "red",               # color de la línea del bin
+    color = "darkgreen",               # color de la línea del bin
     fill = "blue",               # color del interior del bin
     alpha = 0.1)                 # transparencia del bin
 
@@ -159,7 +161,7 @@ ggplot(data_le_hslbp, aes(x = t_espera)) +
   facet_wrap(~nivel_de_atencion)                       # se crean las facetas
 
 #scatterplot
-ggplot(data = data_procesada,
+ggplot(data = data_le_hslbp,
        mapping = aes(           # asignar la estética a las columnas
          x = edad_sic,
          y = t_espera,
@@ -178,11 +180,11 @@ ggplot(data = data_procesada,
 ggplot(data = data_le_hslbp, mapping = aes(x = edad_sic))+
   geom_histogram()
 
-ggplot(data = data_le_hslbp)+
+ggplot(data = data_le_hslbp) +
   geom_histogram(mapping = aes(x = edad_sic))
 
-ggplot()+
-  geom_histogram(data = data_le_hslbp, mapping = aes(x = edad_sic))
+ggplot() +
+  geom_histogram(data = data_le_hslbp, mapping = aes(x = edad_sic)) +
 
 
 # 6. Ejercicios ----
