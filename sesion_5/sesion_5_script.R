@@ -64,6 +64,12 @@ data_le_hslbp <- data_procesada %>%
          edad_sic = round(interval(fecha_nac,f_entrada) / years(1), 1), #lubridate y redondear
          edad_hoy = round(interval(fecha_nac,today()) / years(1), 1)) #lubridate, today() y redondear)
 
+data_le_hblt <- data_procesada %>%
+  filter(abrev_destino == 'HSLBP', is.na(c_salida)) %>%
+  mutate(t_espera = round(interval(f_entrada,today()) / days(1), 1),
+         edad_sic = round(interval(fecha_nac,f_entrada) / years(1), 1), #lubridate y redondear
+         edad_hoy = round(interval(fecha_nac,today()) / years(1), 1)) #lubridate, today() y redondear)
+
 rm(data_bruta, data_deis, especialidades) #elimino los datos que no usaré
 
 
@@ -119,10 +125,15 @@ ggplot(data = data_le_hslbp,
 ###################################################### #
 
 ggplot(data = data_le_hslbp,
+<<<<<<< Updated upstream
        mapping = aes(           # asignar la estética a las columnas
          x = edad_sic,
          y = t_espera,
          color = nivel_de_atencion)) +
+=======
+       mapping = aes(x = edad_sic, y = t_espera, color = nivel_de_atencion)) + #color como variable categórica
+  
+>>>>>>> Stashed changes
   geom_point(alpha = 0.5)
 
 
@@ -139,8 +150,13 @@ ggplot(
 ggplot(data = data_le_hslbp, mapping = aes(x = t_espera))+       # establecer datos y ejes
   geom_histogram(              # mostrar histograma
     binwidth = 10,                # anchura de los bins (cuadrados)
+<<<<<<< Updated upstream
     color = "darkgreen",               # color de la línea del bin
     fill = "blue",               # color del interior del bin
+=======
+    color = "red",               # color de la línea del bin
+    fill = "green",               # color del interior del bin
+>>>>>>> Stashed changes
     alpha = 0.1)                 # transparencia del bin
 
 
