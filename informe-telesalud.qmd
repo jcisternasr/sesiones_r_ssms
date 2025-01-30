@@ -1,0 +1,304 @@
+---
+title: "Informe de gestión remota de la demanda con Telesalud"
+subtitle: 'Servicio de Salud Metropolitano Sur'
+author: 'R. Barrena, J. Cisternas, J. Cortés, F. Viñals, R. Ahumada*'
+date: today
+geometry: "left=3cm,right=3cm,top=2cm,bottom=3cm"
+format: 
+  pdf:
+    toc: true
+    toc-title: Tabla de Contenido
+    number-sections: true
+    colorlinks: true
+    papersize: letter
+    fontsize: '12pt'
+    include-in-header: 
+      text: |
+        \usepackage{fancyhdr}
+        \pagestyle{fancy}
+        \fancyfoot[C]{Unidad de Planificación Sanitaria y Estrategias Digitales.DGR. SSMS. 2024}
+---
+
+```{r, echo=FALSE, include=FALSE, warning=FALSE, message=FALSE}
+source("analisis_telesalud.R")
+source('graficos_telesalud.R')
+```
+
+```{r, echo=FALSE, include=FALSE, warning=FALSE}
+last_sol_date <- format(last_sol_date, format = "%d-%m-%Y")
+
+comma <- function(x, big.mark = ".", decimal.mark = ",", ...) {
+  format(x, big.mark = big.mark, decimal.mark = decimal.mark, ...)
+  }
+
+```
+
+```{r, echo=FALSE, include=FALSE}
+library(knitr)
+library(scales)
+library(kableExtra)
+```
+
+```{r, echo=FALSE, include=FALSE}
+names(piv_comuna) <- c('Comuna','PIV 2024')
+total_piv_2024 <- sum(as.numeric(piv_comuna$`PIV 2024`, na.rm = TRUE))
+total_piv_2024 <- comma(total_piv_2024)
+
+piv_comuna$`PIV 2024` <- comma(piv_comuna$`PIV 2024`)
+```
+
+# Introducción
+
+El objetivo de este informe es entregar una mirada global del funcionamiento de la estrategia Telesalud en las 11 comunas del Servicio de Salud Metropolitano Sur (SSMS).
+
+La Atención Primaria de Salud (APS) tiene como objetivo ser el primer punto de contacto de los usuarios y usuarias con el sistema de salud[^1] . Para lograr incorporar a la APS como un actor relevante dentro de la coordinación y continuidad de la atención en la red y porque los recursos son limitados, es necesario gestionar la demanda de atención en salud con perspectiva de equidad y optimizar los recursos disponibles. En ese sentido, la gestión de la demanda se entiende como controlar y dirigir la demanda de los servicios sanitarios, garantizando la atención oportuna, eficiente y eficaz. Para un mayor énfasis en este tema, recomendamos dirigirse a los lineamientos técnicos de gestión remota de la demanda[^2].
+
+[^1]: Bashshur Rl et al. The empirical foundations of telemedicine interventions in primary care. Telemed J E Health. 2016. doi: 10.1089/tmj.2016.0045
+
+[^2]: Lineamientos Técnicos para la Gestión Remota de la Demanda en Atención Primaria. Subsecretaría de Redes Asistenciales. MINSAL. 2023.
+
+Telesalud, inicialmente llamado Teletriage surge en el SSMS de una alianza de diversas instituciones con el objetivo de potenciar la gestión de la demanda en APS. En este caso, hablamos de gestión remota de la demanda pues a través de una plataforma en línea se establece el contacto entre los usuarios y usuarias de APS y sus establecimientos.
+
+La población inscrita validada total, correspondiente al año 2024, en el SSMS fue de `r total_piv_2024` personas. La PIV del 2024 desagregada por comuna se menciona en la siguiente tabla[^3]. Este datos cobra relevancia para entender las proporciones de la cantidad de solicitudes de atención que los establecimientos deben gestionar y para hacer comparables las estadísticas entre las comunas.
+
+[^3]: Para la comuna de La Granja solo se incluye la PIV del CESFAM Padre Esteban Gumucio.
+
+Esperamos que este informe sea útil para la gestión de los equipos y la estrategia de gestión remota de la demanda. En caso de tener dudas o comentarios, les pedimos puedan escribirnos por los canales habituales.
+
+```{r, echo=FALSE, include=TRUE, message=FALSE, warning=FALSE}
+kable(piv_comuna, longtable = TRUE, align = 'cc', caption = 'Población inscrita validada. 2024. Por comuna. SSMS.')
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+# Load necessary libraries
+library(lubridate)
+library(dplyr)
+
+# Get today's date
+today <- Sys.Date()
+
+# Get the previous month and year
+previous_month <- floor_date(today, "month") - months(1)
+previous_month_name <- month(previous_month, label = TRUE, abbr = FALSE, locale = "es_ES.UTF-8")
+previous_year <- year(previous_month)
+
+# Combine month and year
+previous_month_year <- paste(tolower(previous_month_name), previous_year)
+```
+
+# Estadísticas
+
+En este informe se abordarán las siguientes áreas:
+
+-   Cantidad de solicitudes nuevas.
+
+-   Tiempo de espera.
+
+-   Proporción de egresos vs ingresos.
+
+Todos los datos de este utilizados tienen fecha de corte a `r previous_month_year` y fueron obtenidos de la plataforma de gestión de Telesalud: <https://gestion.telesalud.gob.cl>
+
+## Solicitudes Totales
+
+A la fecha de corte de los datos de este informe (`r last_day_previous_month`) , en el SSMS se había recibido por Telesalud un total de `r comma(nrow(data1))` solicitudes. Las solicitudes totales de cada comuna se desagregan a continuación. Hemos incluido además, la tasa por cada 1000 personas inscritas validadas. Por otro lado, debido a que existen distintas fechas de inicio de la estrategia, se estandarizó también según la cantidad de meses desde la apertura de Telesalud.
+
+```{r, echo=FALSE, include=TRUE}
+
+names(total_sol_comuna) <- c('Comuna','Total de solicitudes','PIV 2024', 'N°solicitudes/1000 personas/mes')
+
+
+kable(total_sol_comuna, align = 'cccc', caption = 'Cantidad de solicitudes de atención por comuna y Tasa de solicitudes por cada 1000 personas, estandarizada por cantidad de meses de implementación de la estrategia. 2021-2024. ',longtable = TRUE)
+```
+
+## Evolución histórica de solicitudes de atención
+
+A continuación se observa la evolución histórica de solicitudes a nivel de Servicio. Se incluyen gráficos suavizados para facilitar la visualización. El primero corresponde a la evolución de la cantidad total de solicitudes a nivel de servicio, el segundo corresponde a la media mensual de solicitudes a nivel de servicio.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+graf_mensual_sol_ssms_total
+```
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_mensual_sol_ssms_historico
+
+```
+
+El mismo gráfico desagregado por comuna, se presenta en la siguientes figuras. El primero corresponde a la cantidad de solicitudes en bruto y el segundo, incluye curvas suavizadas. El tercero incluye las tasas por cada 1000 personas inscritas validadas.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_mensual_sol_comuna
+```
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_mensual_sol_comuna_suavizado
+```
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_mensual_sol_comuna_suavizado_piv
+```
+
+## Proporción de solicitudes pendientes
+
+La proporción de solicitudes pendientes del total de solicitudes desde enero del 2023 se describe a continuación. A nivel de Servicio contamos con un promedio de la proporción de solicitudes pendientes de `r comma(round(proporcion_pendientes_ssms$proportion*100, 2), big.mark = '.', decimal.mark = ",")`%. El detalle por comuna al `r last_sol_date` se puede observar en la siguiente tabla:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+proporcion_pendientes_comuna <- proporcion_pendientes_comuna %>% arrange(desc(`Proporción de solicitudes pendientes`))
+
+kable(proporcion_pendientes_comuna, align = 'cccc', caption = 'Cantidad y proporción de solicitudes pendientes por comuna. 2023-2024. SSMS.',longtable = TRUE)
+```
+
+## Tiempo de espera para el cierre
+
+El tiempo de espera para el cierre se considera como el tiempo que transcurre desde la solicitud por el usuario/a mediante Telesalud hasta el cierre de la misma en plataforma. En este caso, se evalúa el tiempo de espera desde enero del 2024.
+
+A nivel de Servicio de Salud contamos con una media de tiempo de espera para el cierre de las solicitudes de `r promedio_espera_ssms$promedio` días. La media de tiempo de espera para el cierre de las solicitudes, por comuna, se puede observar en la siguiente tabla:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(promedio_espera_comuna, align = 'cc', caption = 'Media de días de espera para el cierre por comuna. 2024. SSMS.',longtable = TRUE)
+
+```
+
+Además, se muestra la evolución del promedio de tiempo de espera mensual por comuna en el gráfico a continuación:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_mensual_diasalcierre_comuna
+```
+
+### Tiempo de espera por prioridad
+
+Al ser revisadas, los triagistas asignan prioridad a las solicitudes de atención, siendo la prioridad 1 la consulta que necesita mayor premura en su agendamiento y la prioridad 3, aquella que necesita menos premura.
+
+Las medias de días de espera por prioridad del Servicio durante el año 2024 son:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(promedio_espera_prioridad_ssms, align = 'cc', caption = 'Media de días de espera para el cierre, por prioridad. 2024. SSMS.',longtable = TRUE)
+```
+
+En el siguiente gráfico se observan las medias comunales durante el año 2024 para las solicitudes, según prioridad.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_promedio_por_prioridad
+```
+
+### Tiempo de espera por prestador
+
+Según el tipo de prestador solicitado, se observan diferencias en los tiempos de espera. A nivel de Servicio, la media de tiempo de espera según prestador, el año 2024, es la siguiente:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(promedio_espera_prestador_ssms, align = 'cc', caption = 'Media de días de espera para el cierre, por tipo de prestador. 2024. SSMS.',longtable = TRUE)
+```
+
+En el siguiente gráfico se observan las medias comunales de tiempo de espera durante el año 2024, según el prestador solicitado.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_promedio_por_prestador
+```
+
+## Tipos de cierre
+
+Según la resolución que se le entregue al usuario/a, se debe determinar un tipo de cierre para cada solicitud. Las opciones que existen actualmente en la plataforma son:
+
+-   Resuelto por contacto telefónico.
+
+-   Agendado para atención presencial.
+
+-   Agendado para atención por telemedicina.
+
+-   Agendado para orden de examen.
+
+-   Resuelto sin agendar por solicitud repetida.
+
+-   Cierre por no poder ubicar al paciente.
+
+-   Cierre administrativo por no gestión.
+
+-   Solicitud no aplica.
+
+La proporción por comuna de los tipos de cierre durante el año 2024 se observa en el siguiente gráfico:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+graf_tiposdecierre
+
+```
+
+## Tiempo para entre solicitud - cierre - agenda (SCA)
+
+El tiempo para el agendamiento corresponde a el tiempo entre la solicitud y la hora de agenda efectiva en la que el usuario/a asistirá a su atención.
+
+Como se mencionó anteriormente, la media de tiempo de espera para el cierre en el Servicio, el año 2024, corresponde a `r promedio_espera_ssms$promedio` días. A continuación se muestran los datos de tiempo de espera a nivel de Servicio, según comuna tipo de cierre, prioridad y tipo de prestador. Los tiempos de espera corresponden a las solicitudes cerradas durante el año 2024.
+
+En todos los casos solo se incorporan los tipos de cierre que requieren agendamiento (consulta presencial, telemedicina y orden de examen). Debido a que en ocasiones se utiliza la fecha de agenda como la fecha de cierre, se tomaron en consideración solo aquellos casos en que la diferencia en días entre cierre y agendamiento fue distinta de cero, es decir, el cierre y el agendamiento no fue el mismo día. Además, se incluyó solo las fechas de agendamiento registradas con fecha máxima el 31-12-2024.
+
+### Tiempo SCA por comuna
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(tabla_ss_dias_sol_cierre_agenda_comuna, align = 'cccc', caption = 'Media de días de espera para el cierre y agendamiento, por comuna. 2024. SSMS.',longtable = TRUE)
+```
+
+### Tiempo SCA por tipo de cierre
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(tabla_ss_dias_sol_cierre_agenda_tipocierre, align = 'cccc', caption = 'Media de días de espera para el cierre y agendamiento, por tipo de cierre. 2024. SSMS.')
+```
+
+### Tiempo SCA por prioridad
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(tabla_ss_dias_sol_cierre_agenda_prioridad, align = 'cccc', caption = 'Media de días de espera para el cierre y agendamiento, por prioridad. 2024. SSMS.')
+```
+
+### Tiempo SCA por tipo de prestador
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+
+kable(tabla_ss_dias_sol_cierre_agenda_prestador, align = 'cccc', caption = 'Media de días de espera para el cierre y agendamiento, por tipo de prestador. 2024. SSMS.')
+```
+
+## Proporción de cierres/solicitud
+
+Proporción de cierres por solicitud a es una medida de la cantidad de cantidad de cierres de solicitud por cada solicitud que ingresa a Telesalud. Para que exista un equilibrio entre la entrada y salida, en un establecimiento se deberían estar cerrando la misma cantidad de solicitudes que ingresan, en un determinado tiempo. Esto da como resultado un 1.0 en proporción de cierres por solicitud.
+
+La siguiente tabla resume la proporción de cierres/solicitud por comuna, con datos desde enero 2024.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+kable(proportion_ss_2024, align = 'cccc', caption = 'Cierres por cada solicitud de atención recibida, por comuna. 2024. SSMS.')
+```
+
+A continuación se observa la proporción de cierres por solicitud desagregado por comuna, entre enero de 2023 y el `r last_day_previous_month`:
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+graf_mensual_prop_comuna_suavizado
+```
+
+### Proporción cierres/solicitud por prestador
+
+A continuación se detalla la proporción de cierres/solicitud, desagregado por prestador. En este caso se muestran los prestadores "Médico", "Matrona" y "Dental". La siguiente tabla muestra la proporción por comuna desde enero 2024 a la fecha.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+kable(z_proportion_prest_ss_2024, align = 'cccc', caption = 'Cierres por cada solicitud de atención recibida, por prestador y comuna. 2024. SSMS.')
+```
+
+En los siguientes gráficos se observa la evolución de este indicador desde enero de 2023.
+
+```{r, echo=FALSE, include=TRUE, warning=FALSE, message=FALSE}
+graf_mensual_prop_comuna_tendencia_medico
+graf_mensual_prop_comuna_tendencia_matrona
+graf_mensual_prop_comuna_tendencia_odonto
+```
